@@ -11,16 +11,26 @@ import java.util.UUID;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
-@Service
+@Service //servis bileşeni olduğunu tanımlama
 public class EventServiceImpl implements EventService {
 
+	
+	//Servis katmanı DB’ye direkt SQL ile değil, Repository üzerinden gider
+	//Repository injection (Veritabanı erişimi)
     private final EventRepository eventRepository;
 
     public EventServiceImpl(EventRepository eventRepository) {
         this.eventRepository = eventRepository;
     }
 
-    @Override
+    // İstemciden gelen DTO: EventCreateRequest
+    //Yeni bir Event entity oluşturuluyor
+    //DTO’daki alanlar entity’ye kopyalanıyor
+    //availableSeats ilk başta capacity kadar ayarlanıyor
+    //eventRepository.save(event) ile DB’ye kaydediliyor.
+    //DB’den dönen entity (id dahil) EventResponse DTO’suna çevrilip dışarı döndürülüyor.
+    
+    @Override //createEvent — Event oluşturma
     public EventResponse createEvent(EventCreateRequest request) {
         Event event = new Event();
         event.setTitle(request.getTitle());
@@ -35,7 +45,11 @@ public class EventServiceImpl implements EventService {
         return mapToResponse(saved);
     }
 
-    @Override
+    // findAll() DB’den tüm Event kayıtlarını getirir (List<Event>)
+    // stream() ile tek tek dolaşıp mapToResponse ile DTO’ya çeviriyoruz.
+    // En sonda List<EventResponse>
+    
+    @Override //getAllEvents — Tüm event’leri listeleme
     public List<EventResponse> getAllEvents() {
         return eventRepository.findAll()
                 .stream()
@@ -43,14 +57,22 @@ public class EventServiceImpl implements EventService {
                 .collect(Collectors.toList());
     }
 
-    @Override
+    // findById(id) = Optional<Event> döner
+    // Yoksa NoSuchElementException fırlatıyoruz
+    
+    @Override //getEventById — Tek event getirme
     public EventResponse getEventById(UUID id) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Event not found"));
         return mapToResponse(event);
     }
 
-    @Override
+    // DB’den event bulunur yoksa exception vercek.
+    // Gelen DTO’daki alanlarla entity güncellenir.
+    // Tekrar save() edilir
+    // Response DTO döner.
+    
+    @Override //updateEvent — Event güncelleme
     public EventResponse updateEvent(UUID id, EventCreateRequest request) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Event not found"));
@@ -66,6 +88,7 @@ public class EventServiceImpl implements EventService {
         return mapToResponse(saved);
     }
 
+    // mapToResponse — Entity → DTO dönüşümü
     private EventResponse mapToResponse(Event e) {
         return new EventResponse(
                 e.getId(),

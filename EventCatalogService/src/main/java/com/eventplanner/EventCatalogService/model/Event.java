@@ -4,30 +4,63 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+// Bu sınıfın Entity olduğunu belirtir
+// Bir veritabanı tablosu ile eşler
+// Veritabanında oluşacak tablonun adı: events
+
 @Entity
 @Table(name = "events")
 public class Event {
-
+	
+	// @Id = Primary Key
+	// @GeneratedValue = ID otomatik üretilir
+	// Tip = UUID güvenlik için
+	// id UUID PRIMARY KEY
+	
     @Id
     @GeneratedValue
     private UUID id;
+    
+    // Alanlar ve Column annotation’ları
+    
+    //Event başlığı
+    // zorunlu null gelirse başarısız
 
     @Column(nullable = false)
     private String title;
+    
+    //Event açıklaması
+    //Max 1000 karakter
+    //Zorunlu değil
 
     @Column(length = 1000)
     private String description;
+    
+    //Event türü (konser, konferans, workshop vb.)
+    //Nullable olabilir
 
     private String category;
+    
+    //Event tarihi ve saati
+    //zorunlu
 
     @Column(nullable = false)
     private LocalDateTime dateTime;
+    
+    //Event’in yapılacağı yer
+    //zorunlu
 
     @Column(nullable = false)
     private String location;
+    
+    //Event’in max katılımcı sayısı
+    //zorunlu
 
     @Column(nullable = false)
     private Integer capacity;
+    
+    //Kalan boş koltuk sayısı
+    // BookingService ile entegre olunca güncellenecek alan olacak
 
     @Column(nullable = false)
     private Integer availableSeats;

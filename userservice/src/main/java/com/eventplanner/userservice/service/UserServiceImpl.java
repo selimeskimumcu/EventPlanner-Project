@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.NoSuchElementException;
 
-@Service
+@Service //bu sınıf servis katmanı bileşenidir
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
@@ -21,35 +21,49 @@ public class UserServiceImpl implements UserService {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
+    
+    //existsByEmail ile aynı email kontrol edilir
+    //Duplicate kayıt engellenir
+    //unique=true
 
-    @Override
+    @Override //register(RegisterRequest)
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already in use");
         }
 
-        User user = new User();
+        User user = new User(); //Kullanıcı oluşturma ve alan atamaları
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRole("USER");
+        //Register sırasında şifreyi BCrypt ile hashleyip passwordHash alanına kaydediyoruz
 
         User saved = userRepository.save(user);
+        //db'ye kayıt
 
-        // placeholder token (later -> real JWT)
+        //Şu an token kısmı placeholder, entegrasyon aşamasında JWT üretimi eklenecek
         String token = "dummy-token";
 
         return new AuthResponse(saved.getId(), saved.getEmail(), saved.getRole(), token);
     }
+    
+    //Email ile user çekmek
+    //Yoksa exception fırlat
 
-    @Override
+    @Override //login(LoginRequest)
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
+        
+        //Şifre doğrulama
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new RuntimeException("Invalid credentials");
         }
+        
+        //Başarılı login sonrası response
+        //Başarılıysa auth response döner.
 
         String token = "dummy-token";
 

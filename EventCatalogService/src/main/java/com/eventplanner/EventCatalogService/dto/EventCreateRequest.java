@@ -12,6 +12,8 @@ public class EventCreateRequest {
     private Integer capacity;
 
     public EventCreateRequest() {}
+    
+    //JSON’daki alanları Java objesine map eder
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
