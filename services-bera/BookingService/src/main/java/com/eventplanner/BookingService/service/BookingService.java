@@ -21,32 +21,47 @@ public class BookingService {
     @Autowired
     private com.eventplanner.BookingService.client.PaymentClient paymentClient;
 
-    try
-    {
-        eventCatalogClient.getEventById(booking.getEventId());
-    }catch(
-    Exception e)
-    {
-        throw new RuntimeException("Event validation failed: " + e.getMessage());
-    }
+    /**
+     * Creates a new booking.
+     * <p>
+     * Flow:
+     * 1. Validates the event exists (via Feign Client).
+     * 2. Saves booking as PENDING.
+     * 3. Initiates payment (via Feign Client).
+     * 4. Updates status to CONFIRMED or FAILED_PAYMENT.
+     */
+    public Booking createBooking(Booking booking) {
+        try {
+            com.eventplanner.BookingService.dto.EventResponse event = eventCatalogClient
+                    .getEventById(booking.getEventId());
+            if (event == null) {
+                throw new RuntimeException("Event not found");
+            }
+            // Optional: Check available seats logic here
+        } catch (Exception e) {
+            throw new RuntimeException("Event validation failed: " + e.getMessage());
+        }
 
-    booking.setBookingDate(LocalDateTime.now());booking.setStatus("PENDING");booking.setPaymentStatus(false);
-    Booking savedBooking = bookingRepository.save(booking);
+        booking.setBookingDate(LocalDateTime.now());
+        booking.setStatus("PENDING");
+        booking.setPaymentStatus(false);
+        Booking savedBooking = bookingRepository.save(booking);
 
-    com.eventplanner.BookingService.dto.PaymentRequest paymentRequest = new com.eventplanner.BookingService.dto.PaymentRequest();paymentRequest.setBookingId(savedBooking.getId());paymentRequest.setAmount(100.0);paymentRequest.setStatus("PENDING");
+        com.eventplanner.BookingService.dto.PaymentRequest paymentRequest = new com.eventplanner.BookingService.dto.PaymentRequest();
+        paymentRequest.setBookingId(savedBooking.getId());
+        paymentRequest.setAmount(100.0); // This should ideally come from Event details
+        paymentRequest.setStatus("PENDING");
 
-    try
-    {
-        paymentClient.processPayment(paymentRequest);
-        savedBooking.setPaymentStatus(true);
-        savedBooking.setStatus("CONFIRMED");
-    }catch(
-    Exception e)
-    {
-        savedBooking.setStatus("FAILED_PAYMENT");
-    }
+        try {
+            paymentClient.processPayment(paymentRequest);
+            savedBooking.setPaymentStatus(true);
+            savedBooking.setStatus("CONFIRMED");
+        } catch (Exception e) {
+            savedBooking.setStatus("FAILED_PAYMENT");
+            // Log error
+        }
 
-    return bookingRepository.save(savedBooking);
+        return bookingRepository.save(savedBooking);
     }
 
     public Booking getBookingById(UUID id) {

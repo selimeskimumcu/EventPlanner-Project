@@ -1,22 +1,33 @@
 package com.eventplanner.BookingService.dto;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class EventResponse {
+
     private UUID id;
     private String title;
-    private int availableSeats;
+    private String description;
+    private String category;
+    private LocalDateTime dateTime;
+    private String location;
     private Integer capacity;
-    // Add other fields if needed for validation
+    private Integer availableSeats;
 
     public EventResponse() {
     }
 
-    public EventResponse(UUID id, String title, int availableSeats, Integer capacity) {
+    public EventResponse(UUID id, String title, String description,
+            String category, LocalDateTime dateTime,
+            String location, Integer capacity, Integer availableSeats) {
         this.id = id;
         this.title = title;
-        this.availableSeats = availableSeats;
+        this.description = description;
+        this.category = category;
+        this.dateTime = dateTime;
+        this.location = location;
         this.capacity = capacity;
+        this.availableSeats = availableSeats;
     }
 
     public UUID getId() {
@@ -35,12 +46,36 @@ public class EventResponse {
         this.title = title;
     }
 
-    public int getAvailableSeats() {
-        return availableSeats;
+    public String getDescription() {
+        return description;
     }
 
-    public void setAvailableSeats(int availableSeats) {
-        this.availableSeats = availableSeats;
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public LocalDateTime getDateTime() {
+        return dateTime;
+    }
+
+    public void setDateTime(LocalDateTime dateTime) {
+        this.dateTime = dateTime;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
     }
 
     public Integer getCapacity() {
@@ -49,5 +84,13 @@ public class EventResponse {
 
     public void setCapacity(Integer capacity) {
         this.capacity = capacity;
+    }
+
+    public Integer getAvailableSeats() {
+        return availableSeats;
+    }
+
+    public void setAvailableSeats(Integer availableSeats) {
+        this.availableSeats = availableSeats;
     }
 }

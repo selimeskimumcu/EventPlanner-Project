@@ -8,20 +8,21 @@ import com.eventplanner.BookingService.model.Booking;
 import com.eventplanner.BookingService.repository.BookingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
-public class BookingServiceTest {
+class BookingServiceTest {
 
     @Mock
     private BookingRepository bookingRepository;
@@ -35,32 +36,33 @@ public class BookingServiceTest {
     @InjectMocks
     private BookingService bookingService;
 
-    private Booking booking;
-    private EventResponse eventResponse;
-
     @BeforeEach
     void setUp() {
-        booking = new Booking();
-        booking.setId(UUID.randomUUID());
-        booking.setUserId(UUID.randomUUID());
-        booking.setEventId(UUID.randomUUID());
-
-        eventResponse = new EventResponse();
-        eventResponse.setId(booking.getEventId());
-        eventResponse.setTitle("Test Event");
-        eventResponse.setAvailableSeats(10);
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
     void createBooking_Success() {
-        // Arrange
-        when(eventCatalogClient.getEventById(booking.getEventId())).thenReturn(eventResponse);
-        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        UUID eventId = UUID.randomUUID();
+        UUID bookingId = UUID.randomUUID();
+        Booking booking = new Booking();
+        booking.setEventId(eventId);
+        booking.setUserId(UUID.randomUUID());
 
-        // Act
+        EventResponse eventResponse = new EventResponse();
+        eventResponse.setId(eventId);
+        eventResponse.setTitle("Test Event");
+
+        when(eventCatalogClient.getEventById(eventId)).thenReturn(eventResponse);
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> {
+            Booking b = invocation.getArgument(0);
+            b.setId(bookingId);
+            return b;
+        });
+        when(paymentClient.processPayment(any(PaymentRequest.class))).thenReturn(new Object());
+
         Booking createdBooking = bookingService.createBooking(booking);
 
-        // Assert
         assertNotNull(createdBooking);
         assertEquals("CONFIRMED", createdBooking.getStatus());
         assertTrue(createdBooking.isPaymentStatus());
@@ -68,18 +70,58 @@ public class BookingServiceTest {
     }
 
     @Test
-    void createBooking_PaymentFailure() {
-        // Arrange
-        when(eventCatalogClient.getEventById(booking.getEventId())).thenReturn(eventResponse);
+    void createBooking_EventNotFound() {
+        UUID eventId = UUID.randomUUID();
+        Booking booking = new Booking();
+        booking.setEventId(eventId);
+
+        when(eventCatalogClient.getEventById(eventId)).thenReturn(null);
+
+        assertThrows(RuntimeException.class, () -> bookingService.createBooking(booking));
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    void createBooking_PaymentFailed() {
+        UUID eventId = UUID.randomUUID();
+        Booking booking = new Booking();
+        booking.setEventId(eventId);
+
+        EventResponse eventResponse = new EventResponse();
+        eventResponse.setId(eventId);
+
+        when(eventCatalogClient.getEventById(eventId)).thenReturn(eventResponse);
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
         doThrow(new RuntimeException("Payment Failed")).when(paymentClient).processPayment(any(PaymentRequest.class));
 
-        // Act
         Booking createdBooking = bookingService.createBooking(booking);
 
-        // Assert
-        assertNotNull(createdBooking);
         assertEquals("FAILED_PAYMENT", createdBooking.getStatus());
         assertFalse(createdBooking.isPaymentStatus());
+    }
+
+    @Test
+    void getUserBookings() {
+        UUID userId = UUID.randomUUID();
+        when(bookingRepository.findByUserId(userId)).thenReturn(Arrays.asList(new Booking(), new Booking()));
+
+        List<Booking> bookings = bookingService.getUserBookings(userId);
+
+        assertEquals(2, bookings.size());
+    }
+
+    @Test
+    void cancelBooking() {
+        UUID bookingId = UUID.randomUUID();
+        Booking booking = new Booking();
+        booking.setId(bookingId);
+        booking.setStatus("CONFIRMED");
+
+        when(bookingRepository.findById(bookingId)).thenReturn(Optional.of(booking));
+
+        bookingService.cancelBooking(bookingId);
+
+        verify(bookingRepository, times(1)).save(booking);
+        assertEquals("CANCELLED", booking.getStatus());
     }
 }

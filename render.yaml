@@ -1,0 +1,142 @@
+services:
+  # 1. Config Server
+  - type: web
+    name: config-server
+    env: docker
+    dockerContext: .
+    dockerfilePath: infrastructure/ConfigServer/Dockerfile
+    plan: free
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: native
+
+  # 2. Discovery Service
+  - type: web
+    name: discovery-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: infrastructure/DiscoveryService/Dockerfile
+    plan: free
+    envVars:
+      - key: EUREKA_CLIENT_REGISTER_WITH_EUREKA
+        value: false
+      - key: EUREKA_CLIENT_FETCH_REGISTRY
+        value: false
+
+  # 3. Gateway Service
+  - type: web
+    name: gateway-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: infrastructure/GatewayService/Dockerfile
+    plan: free
+    envVars:
+      - key: CONFIG_SERVER_URL
+        value: http://config-server:8888
+      - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+        value: http://discovery-service:8761/eureka/
+
+  # 4. User Service
+  - type: web
+    name: user-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: services-selim/userservice/Dockerfile
+    plan: free
+    envVars:
+      - key: CONFIG_SERVER_URL
+        value: http://config-server:8888
+      - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+        value: http://discovery-service:8761/eureka/
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: eventplanner-db
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+            name: eventplanner-db
+            property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+            name: eventplanner-db
+            property: password
+
+  # 5. Event Catalog Service
+  - type: web
+    name: event-catalog-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: services-selim/EventCatalogService/Dockerfile
+    plan: free
+    envVars:
+      - key: CONFIG_SERVER_URL
+        value: http://config-server:8888
+      - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+        value: http://discovery-service:8761/eureka/
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: eventplanner-db
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+            name: eventplanner-db
+            property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+            name: eventplanner-db
+            property: password
+
+  # 6. Booking Service
+  - type: web
+    name: booking-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: services-bera/BookingService/Dockerfile
+    plan: free
+    envVars:
+      - key: CONFIG_SERVER_URL
+        value: http://config-server:8888
+      - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+        value: http://discovery-service:8761/eureka/
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: eventplanner-db
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+            name: eventplanner-db
+            property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+            name: eventplanner-db
+            property: password
+
+  # 7. Payment Service
+  - type: web
+    name: payment-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: services-bera/PaymentService/Dockerfile
+    plan: free
+    envVars:
+      - key: CONFIG_SERVER_URL
+        value: http://config-server:8888
+      - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+        value: http://discovery-service:8761/eureka/
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: eventplanner-db
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+            name: eventplanner-db
+            property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+            name: eventplanner-db
+            property: password
+
+databases:
+  - name: eventplanner-db
+    databaseName: eventplanner
+    user: eventplanner

@@ -1,0 +1,97 @@
+
+
+services:
+  # 1. Database
+  eventplanner-db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: eventplanner
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: eventplanner
+    ports:
+      - "5432:5432"
+
+  # 2. Config Server
+  config-server:
+    build: infrastructure/ConfigServer
+    ports:
+      - "8888:8888"
+    environment:
+      - SPRING_PROFILES_ACTIVE=native
+
+  # 3. Discovery Service
+  discovery-service:
+    build: infrastructure/DiscoveryService
+    ports:
+      - "8761:8761"
+    environment:
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=false
+      - EUREKA_CLIENT_FETCH_REGISTRY=false
+
+  # 4. Gateway Service
+  gateway-service:
+    build: infrastructure/GatewayService
+    ports:
+      - "8080:8080"
+    environment:
+      - CONFIG_SERVER_URL=http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-service:8761/eureka/
+    depends_on:
+      - config-server
+      - discovery-service
+
+  # 5. User Service
+  user-service:
+    build: services-selim/userservice
+    environment:
+      - CONFIG_SERVER_URL=http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://eventplanner-db:5432/eventplanner
+      - SPRING_DATASOURCE_USERNAME=eventplanner
+      - SPRING_DATASOURCE_PASSWORD=password
+    depends_on:
+      - config-server
+      - discovery-service
+      - eventplanner-db
+
+  # 6. Event Catalog Service
+  event-catalog-service:
+    build: services-selim/EventCatalogService
+    environment:
+      - CONFIG_SERVER_URL=http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://eventplanner-db:5432/eventplanner
+      - SPRING_DATASOURCE_USERNAME=eventplanner
+      - SPRING_DATASOURCE_PASSWORD=password
+    depends_on:
+      - config-server
+      - discovery-service
+      - eventplanner-db
+
+  # 7. Booking Service
+  booking-service:
+    build: services-bera/BookingService
+    environment:
+      - CONFIG_SERVER_URL=http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://eventplanner-db:5432/eventplanner
+      - SPRING_DATASOURCE_USERNAME=eventplanner
+      - SPRING_DATASOURCE_PASSWORD=password
+    depends_on:
+      - config-server
+      - discovery-service
+      - eventplanner-db
+
+  # 8. Payment Service
+  payment-service:
+    build: services-bera/PaymentService
+    environment:
+      - CONFIG_SERVER_URL=http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://eventplanner-db:5432/eventplanner
+      - SPRING_DATASOURCE_USERNAME=eventplanner
+      - SPRING_DATASOURCE_PASSWORD=password
+    depends_on:
+      - config-server
+      - discovery-service
+      - eventplanner-db
