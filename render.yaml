@@ -1,142 +1,201 @@
 services:
-  # 1. Config Server
-  - type: web
-    name: config-server
-    env: docker
-    dockerContext: .
-    dockerfilePath: infrastructure/ConfigServer/Dockerfile
-    plan: free
-    envVars:
-      - key: SPRING_PROFILES_ACTIVE
-        value: native
-
-  # 2. Discovery Service
+  # --------------------------------------------------------------------------------
+  # INFRASTRUCTURE
+  # --------------------------------------------------------------------------------
   - type: web
     name: discovery-service
     env: docker
     dockerContext: .
     dockerfilePath: infrastructure/DiscoveryService/Dockerfile
     plan: free
+    numInstances: 1
+    healthCheckPath: /actuator/health
     envVars:
-      - key: EUREKA_CLIENT_REGISTER_WITH_EUREKA
-        value: false
-      - key: EUREKA_CLIENT_FETCH_REGISTRY
-        value: false
+      - key: SERVER_PORT
+        value: 8761
 
-  # 3. Gateway Service
+  - type: web
+    name: config-server
+    env: docker
+    dockerContext: .
+    dockerfilePath: infrastructure/ConfigServer/Dockerfile
+    plan: free
+    numInstances: 1
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SERVER_PORT
+        value: 8888
+      - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+        value: http://discovery-service:8761/eureka/
+
   - type: web
     name: gateway-service
     env: docker
     dockerContext: .
     dockerfilePath: infrastructure/GatewayService/Dockerfile
     plan: free
+    numInstances: 1
+    healthCheckPath: /actuator/health
     envVars:
-      - key: CONFIG_SERVER_URL
-        value: http://config-server:8888
+      - key: SERVER_PORT
+        value: 8080
       - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
         value: http://discovery-service:8761/eureka/
-
-  # 4. User Service
-  - type: web
-    name: user-service
-    env: docker
-    dockerContext: .
-    dockerfilePath: services-selim/userservice/Dockerfile
-    plan: free
-    envVars:
       - key: CONFIG_SERVER_URL
         value: http://config-server:8888
-      - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
-        value: http://discovery-service:8761/eureka/
-      - key: SPRING_DATASOURCE_URL
-        fromDatabase:
-          name: eventplanner-db
-          property: connectionString
-      - key: SPRING_DATASOURCE_USERNAME
-        fromDatabase:
-            name: eventplanner-db
-            property: user
-      - key: SPRING_DATASOURCE_PASSWORD
-        fromDatabase:
-            name: eventplanner-db
-            property: password
 
-  # 5. Event Catalog Service
+  # --------------------------------------------------------------------------------
+  # SELIM'S SERVICES
+  # --------------------------------------------------------------------------------
   - type: web
     name: event-catalog-service
     env: docker
     dockerContext: .
-    dockerfilePath: services-selim/EventCatalogService/Dockerfile
+    dockerfilePath: EventPlanner-Project-selim/EventCatalogService/Dockerfile
     plan: free
+    numInstances: 1
+    healthCheckPath: /actuator/health
     envVars:
-      - key: CONFIG_SERVER_URL
-        value: http://config-server:8888
+      - key: SERVER_PORT
+        value: 8080
       - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
         value: http://discovery-service:8761/eureka/
-      - key: SPRING_DATASOURCE_URL
+      - key: CONFIG_SERVER_URL
+        value: http://config-server:8888
+      - key: DB_HOST
         fromDatabase:
           name: eventplanner-db
-          property: connectionString
-      - key: SPRING_DATASOURCE_USERNAME
+          property: host
+      - key: DB_PORT
         fromDatabase:
-            name: eventplanner-db
-            property: user
-      - key: SPRING_DATASOURCE_PASSWORD
+          name: eventplanner-db
+          property: port
+      - key: DB_NAME
         fromDatabase:
-            name: eventplanner-db
-            property: password
+          name: eventplanner-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: eventplanner-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: eventplanner-db
+          property: password
 
-  # 6. Booking Service
+  - type: web
+    name: user-service
+    env: docker
+    dockerContext: .
+    dockerfilePath: EventPlanner-Project-selim/UserService/Dockerfile
+    plan: free
+    numInstances: 1
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SERVER_PORT
+        value: 8080
+      - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+        value: http://discovery-service:8761/eureka/
+      - key: CONFIG_SERVER_URL
+        value: http://config-server:8888
+      - key: DB_HOST
+        fromDatabase:
+          name: eventplanner-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: eventplanner-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: eventplanner-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: eventplanner-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: eventplanner-db
+          property: password
+
+  # --------------------------------------------------------------------------------
+  # BERA'S SERVICES
+  # --------------------------------------------------------------------------------
   - type: web
     name: booking-service
     env: docker
     dockerContext: .
-    dockerfilePath: services-bera/BookingService/Dockerfile
+    dockerfilePath: EventPlanner-Project-bera/BookingService/Dockerfile
     plan: free
+    numInstances: 1
+    healthCheckPath: /actuator/health
     envVars:
-      - key: CONFIG_SERVER_URL
-        value: http://config-server:8888
+      - key: SERVER_PORT
+        value: 8080
       - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
         value: http://discovery-service:8761/eureka/
-      - key: SPRING_DATASOURCE_URL
+      - key: CONFIG_SERVER_URL
+        value: http://config-server:8888
+      - key: DB_HOST
         fromDatabase:
           name: eventplanner-db
-          property: connectionString
-      - key: SPRING_DATASOURCE_USERNAME
+          property: host
+      - key: DB_PORT
         fromDatabase:
-            name: eventplanner-db
-            property: user
-      - key: SPRING_DATASOURCE_PASSWORD
+          name: eventplanner-db
+          property: port
+      - key: DB_NAME
         fromDatabase:
-            name: eventplanner-db
-            property: password
+          name: eventplanner-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: eventplanner-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: eventplanner-db
+          property: password
 
-  # 7. Payment Service
   - type: web
     name: payment-service
     env: docker
     dockerContext: .
-    dockerfilePath: services-bera/PaymentService/Dockerfile
+    dockerfilePath: EventPlanner-Project-bera/PaymentService/Dockerfile
     plan: free
+    numInstances: 1
+    healthCheckPath: /actuator/health
     envVars:
-      - key: CONFIG_SERVER_URL
-        value: http://config-server:8888
+      - key: SERVER_PORT
+        value: 8080
       - key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
         value: http://discovery-service:8761/eureka/
-      - key: SPRING_DATASOURCE_URL
+      - key: CONFIG_SERVER_URL
+        value: http://config-server:8888
+      - key: DB_HOST
         fromDatabase:
           name: eventplanner-db
-          property: connectionString
-      - key: SPRING_DATASOURCE_USERNAME
+          property: host
+      - key: DB_PORT
         fromDatabase:
-            name: eventplanner-db
-            property: user
-      - key: SPRING_DATASOURCE_PASSWORD
+          name: eventplanner-db
+          property: port
+      - key: DB_NAME
         fromDatabase:
-            name: eventplanner-db
-            property: password
+          name: eventplanner-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: eventplanner-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: eventplanner-db
+          property: password
 
 databases:
   - name: eventplanner-db
     databaseName: eventplanner
-    user: eventplanner
+    user: planner
+    plan: free
